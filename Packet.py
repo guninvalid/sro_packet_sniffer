@@ -1,11 +1,28 @@
+from scapy.all import sniff
+from scapy.all import IP,TCP
+
+def gen_lookup_array(N):
+  # if it doesnt exist then generate the array
+  lookup = [-1] * N
+  for i in range(0, N):
+    key_raw = i
+    key_num = (key_raw ** 3) % N
+    lookup[key_num] = key_raw
+  return lookup
+
+TARGET_IP = "167.99.6.174"
+ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
+
 class Packet:
   def __init__(self, ppacket):
     self.packet = ppacket
-    if (self.packet.haslayer(TCP)):
-      self.tcp = self.packet[IP][TCP]
+    if (not self.packet.haslayer(TCP)):
+      return self
+    self.tcp = self.packet[IP][TCP]
     self.src_ip = self.packet[IP].src
     self.dst_ip = self.packet[IP].dst
-    self.decrypted_data == ""
+    self.packet_addendum = ""
+    self.decrypted_data = ""
     if self.src_ip == TARGET_IP or self.dst_ip == TARGET_IP:
       self.set_flags()
       self.parse_data()
@@ -27,6 +44,7 @@ class Packet:
     flag_depreciator = flag_depreciator >> 1;
     self.CWR_FLAG = flag_depreciator % 2 == 1;
     flag_depreciator = flag_depreciator >> 1;
+    self.packet_addendum = self.tcp.flags
   def parse_data(self):
     if (not self.PSH_FLAG):
       return #if no data no bother
@@ -60,6 +78,21 @@ class Packet:
       final_data[i] = final_byte
     self.decrypted_data = final_data
   def print(self):
-    if (self.decrypted_data != ""):
+    if (hasattr(self, "decrypted_data")):
       self.packet_addendum = self.decrypted_data.hex()
     return f"Packet: {self.src_ip} -> {self.dst_ip}: {self.packet_addendum}"
+
+def parse_bytes_to_num(byte_array):
+  accumulator = 0
+  N = len(byte_array)
+  for i in range(0, N):
+    accumulator += (256 ** (N - i - 1)) * byte_array[i]
+  return accumulator
+
+def encryption_code_lookup(num):
+  key_raw = ENCRYPTION_NUM_LOOKUP_ARRAY[num]
+  # key_sha = str(sha256(key_raw))[0:15]
+  # return (key_raw, key_sha)
+  return (key_raw, None)
+Packet.encryption_raw = ""
+Packet.encryption_num = ""
