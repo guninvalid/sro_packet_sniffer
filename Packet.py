@@ -91,7 +91,7 @@ class Packet:
       key_length = len(encryption_key)
       offset = encryption_key[(i % key_length)].encode('utf-8')[0]
       final_byte = byte - offset
-      while final_byte < -128:
+      while final_byte < 0:
         final_byte += 256
       final_data[i] = final_byte
     self.decrypted_data : bytes = bytes(final_data)
