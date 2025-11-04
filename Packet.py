@@ -14,15 +14,26 @@ TARGET_IP = "167.99.6.174"
 ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
 
 class Packet:
+  
   def __init__(self, ppacket):
+    # initializers
+    self.packet = ""
+    self.tcp = ""
+    self.src_ip = ""
+    self.dst_ip = ""
+    self.FIN_FLAG = ""; self.SYN_FLAG = ""; self.RST_FLAG = ""; self.PSH_FLAG = ""; self.ACK_FLAG = ""; self.URG_FLAG = ""; self.ECE_FLAG = ""; self.CWR_FLAG = "";
+    self.data_length = ""; self.data_bytes = "";
+    self.op_code = ""
+    self.packet_addendum = ""
+    self.decrypted_data = ""
+    
+
     self.packet = ppacket
-    if (not self.packet.haslayer(TCP)):
+    if (self.packet.haslayer(TCP) == False):
       return self
     self.tcp = self.packet[IP][TCP]
     self.src_ip = self.packet[IP].src
     self.dst_ip = self.packet[IP].dst
-    self.packet_addendum = ""
-    self.decrypted_data = ""
     if self.src_ip == TARGET_IP or self.dst_ip == TARGET_IP:
       self.set_flags()
       self.parse_data()
@@ -46,7 +57,7 @@ class Packet:
     flag_depreciator = flag_depreciator >> 1;
     self.packet_addendum = self.tcp.flags
   def parse_data(self):
-    if (not self.PSH_FLAG):
+    if (self.PSH_FLAG == False):
       return #if no data no bother
     raw_data_bytes = self.tcp.payload.load
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
@@ -61,11 +72,14 @@ class Packet:
         code += (10 ** (num_bytes - i - 1)) * (self.data_bytes[OFFSET + i] - 48)
       Packet.encryption_num = code;
       Packet.encryption_raw = ENCRYPTION_NUM_LOOKUP_ARRAY[code]
+      sha_encoder = sha256()
+      sha_encoder.update(str(code).encode('ascii'))
+      Packet.encryption_key = sha_encoder.hexdigest() # i am surprised this works
       self.packet_addendum = f"Encryption key num passed! Caught num {code}."
       self.packet_addendum += f" (Raw: {Packet.encryption_raw})"
     else:
       # attempt to decrypt
-      self.decrypt(Packet.encryption_raw)
+      self.decrypt(Packet.encryption_key)
   def decrypt(self, encryption_key):
     if (encryption_key == ""): return
     final_data = []
@@ -96,3 +110,4 @@ def encryption_code_lookup(num):
   return (key_raw, None)
 Packet.encryption_raw = ""
 Packet.encryption_num = ""
+Packet.encryption_key = ""
