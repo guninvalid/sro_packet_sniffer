@@ -1,5 +1,7 @@
 from scapy.all import sniff
 from scapy.all import IP,TCP
+from hashlib import sha256
+from config import DEBUG,TARGET_IP
 
 def gen_lookup_array(N):
   # if it doesnt exist then generate the array
@@ -10,7 +12,6 @@ def gen_lookup_array(N):
     lookup[key_num] = key_raw
   return lookup
 
-TARGET_IP = "167.99.6.174"
 ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
 
 class Packet:
@@ -22,7 +23,7 @@ class Packet:
     self.src_ip = ""
     self.dst_ip = ""
     self.FIN_FLAG = ""; self.SYN_FLAG = ""; self.RST_FLAG = ""; self.PSH_FLAG = ""; self.ACK_FLAG = ""; self.URG_FLAG = ""; self.ECE_FLAG = ""; self.CWR_FLAG = "";
-    self.data_length = ""; self.data_bytes = "";
+    self.data_length = 0; self.data_bytes = "";
     self.op_code = ""
     self.packet_addendum = ""
     self.decrypted_data = ""
@@ -63,9 +64,10 @@ class Packet:
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
     self.data_bytes = raw_data_bytes[2:]
     self.op_code = parse_bytes_to_num(self.data_bytes[0:2])
+    self.packet_addendum = f"[RAW] {self.data_bytes.hex()}"
     if (self.op_code == 107):
       num_bytes = (self.data_bytes[2] * 256) + self.data_bytes[3]
-      print(num_bytes)
+    #   print(num_bytes)
       code = 0
       OFFSET = 4; #const
       for i in range(0, num_bytes):
@@ -73,28 +75,32 @@ class Packet:
       Packet.encryption_num = code;
       Packet.encryption_raw = ENCRYPTION_NUM_LOOKUP_ARRAY[code]
       sha_encoder = sha256()
-      sha_encoder.update(str(code).encode('ascii'))
-      Packet.encryption_key = sha_encoder.hexdigest() # i am surprised this works
+      sha_encoder.update(str(Packet.encryption_raw).encode('ascii'))
+      Packet.encryption_key = sha_encoder.hexdigest()[0:16] # i am surprised this works
       self.packet_addendum = f"Encryption key num passed! Caught num {code}."
-      self.packet_addendum += f" (Raw: {Packet.encryption_raw})"
+      self.packet_addendum += f" (Raw: {Packet.encryption_raw}, key: {Packet.encryption_key})"
     else:
       # attempt to decrypt
       self.decrypt(Packet.encryption_key)
   def decrypt(self, encryption_key):
     if (encryption_key == ""): return
-    final_data = []
+    debug("Decrypyting!")
+    final_data: list[bytes] = [b"0"] * self.data_length
     for i in range(0, len(self.data_bytes)):
       byte = self.data_bytes[i];
-      offset = encryption_key[(i % len(encryption_key)):(i % len(encryption_key))].encode('utf-8')[0]
+      key_length = len(encryption_key)
+      offset = encryption_key[(i % key_length)].encode('utf-8')[0]
       final_byte = byte - offset
       while final_byte < -128:
         final_byte += 256
       final_data[i] = final_byte
-    self.decrypted_data = final_data
+    self.decrypted_data : bytes = bytes(final_data)
+    self.packet_addendum = f"[DEC]: {self.decrypted_data.hex()}"
   def print(self):
-    if (hasattr(self, "decrypted_data")):
-      self.packet_addendum = self.decrypted_data.hex()
-    return f"Packet: {self.src_ip} -> {self.dst_ip}: {self.packet_addendum}"
+    # ok so what i want is
+    # if there 
+    # nvm
+    return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.data_length}B] {self.packet_addendum}"
 
 def parse_bytes_to_num(byte_array):
   accumulator = 0
@@ -111,3 +117,7 @@ def encryption_code_lookup(num):
 Packet.encryption_raw = ""
 Packet.encryption_num = ""
 Packet.encryption_key = ""
+
+def debug(message):
+  if (DEBUG == True):
+    print(message)
