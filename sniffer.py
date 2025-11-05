@@ -1,5 +1,5 @@
 from scapy.all import sniff
-from scapy.all import IP,TCP
+from scapy.all import IP,TCP,IPSession
 from scapy.all import Packet as SCPacket
 from scapy.all import PacketList
 from hashlib import sha256
@@ -10,7 +10,7 @@ from logger import debug, info, warn, error, fatal
 def main():
   print(f"Starting packet capture for {TARGET_IP}...")
   # ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
-  packets:PacketList = sniff(filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
+  packets:PacketList = sniff(session=IPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
 
 def packet_handler(dum_packet:SCPacket):
   try:

@@ -1,6 +1,7 @@
 from scapy.all import sniff
 from scapy.all import IP,TCP
-from scapy.all import Packet as SCPacket
+from scapy.all import Packet as ScapyPacket
+# from GameSession import GameSession
 from hashlib import sha256
 from config import TARGET_IP
 from logger import debug,info,warning,error,fatal,warn
@@ -18,10 +19,10 @@ ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
 
 class Packet:
   
-  def __init__(self, ppacket:SCPacket):
+  def __init__(self, scapyPacket:ScapyPacket):
     # initializers
-    self.packet:SCPacket
-    self.tcp:SCPacket
+    self.packet:ScapyPacket
+    self.tcp:ScapyPacket
     self.src_ip:str
     self.dst_ip:str
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
@@ -30,8 +31,7 @@ class Packet:
     self.packet_addendum:str
     self.decrypted_data:bytes
     
-
-    self.packet = ppacket
+    self.packet = scapyPacket
     if (self.packet.haslayer(TCP) == False):
       return self
     self.tcp = self.packet[IP][TCP]
@@ -67,25 +67,24 @@ class Packet:
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
     self.data_bytes = raw_data_bytes[2:]
     if (self.data_length != len(self.data_bytes)):
-      # allegedly in some cases the length will be in ascii not hex
-      if (30 <= raw_data_bytes[0] and raw_data_bytes[0] <= 39
-          and 30 <= raw_data_bytes[1] and raw_data_bytes[1] <= 39):
-        # attempt to process as ascii length
-        ascii_int:int = raw_data_bytes[1] - 30
-        ascii_int += 10 * (raw_data_bytes[0] - 30)
-        self.data_length = ascii_int
-        # test again
-        if (self.data_length != len(self.data_bytes)):
-          warn("Malformed packet! Lengths in hex and ascii do not match!")
-          warn("Attempting to auto assign to len(data_length).")
-          self.data_length = len(self.data_bytes)
-      else:
-        warn("Malformed packet! Lengths in hex do not match!")
-    if (self.data_length != len(self.data_bytes)):
-        warn("Attempting to auto assign to len(data_length).")
-        warn(f"Existing length: {self.data_length}")
-        self.data_length = len(self.data_bytes)
-        warn(f"New length: {self.data_length}")
+      # # allegedly in some cases the length will be in ascii not hex
+      # if (30 <= raw_data_bytes[0] and raw_data_bytes[0] <= 39
+      #     and 30 <= raw_data_bytes[1] and raw_data_bytes[1] <= 39):
+      #   # attempt to process as ascii length
+      #   ascii_int:int = raw_data_bytes[1] - 30
+      #   ascii_int += 10 * (raw_data_bytes[0] - 30)
+      #   self.data_length = ascii_int
+      #   # test again
+      #   if (self.data_length != len(self.data_bytes)):
+      #     warn("Malformed packet! Lengths in hex and ascii do not match!")
+      # else:
+      warn("Malformed packet! Lengths in hex do not match!")
+    # # if (self.data_length != len(self.data_bytes)):
+    #   warn("Attempting to auto assign to len(data_length).")
+    #   old_length:int = self.data_length
+    #   self.data_length = len(self.data_bytes)
+    #   warn(f"Problematic packet payload: {self.tcp.payload.load.hex()}")
+    #   warn(f"Changed datalength from {old_length} to {self.data_length}")
     self.op_code = parse_bytes_to_num(self.data_bytes[0:2])
     self.packet_addendum = f"[RAW] {self.data_bytes.hex()}"
     if (self.op_code == 107):
@@ -107,7 +106,10 @@ class Packet:
       # warn(encryption_key_message)
     else:
       # attempt to decrypt
-      self.decrypt(Packet.encryption_key)
+      if (self.data_length == len(self.data_bytes)):
+        # incorrect lengths are usually because of fragmented packets
+        # im gonna be lazy and just ignore them
+        self.decrypt(Packet.encryption_key)
   def decrypt(self, encryption_key) -> None:
     if (encryption_key == ""): return
     final_data:bytes = decrypt(self.data_bytes, encryption_key)
