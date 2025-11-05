@@ -114,10 +114,7 @@ def encryption_code_lookup(num):
   # key_sha = str(sha256(key_raw))[0:15]
   # return (key_raw, key_sha)
   return (key_raw, None)
+
 Packet.encryption_raw = ""
 Packet.encryption_num = ""
 Packet.encryption_key = ""
-
-def debug(message):
-  if (DEBUG == True):
-    print(message)

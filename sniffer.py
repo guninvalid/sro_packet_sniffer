@@ -2,7 +2,8 @@ from scapy.all import sniff
 from scapy.all import IP,TCP
 from hashlib import sha256
 from Packet import Packet
-from config import DEBUG,TARGET_IP,PACKET_COUNT
+from config import TARGET_IP,PACKET_COUNT
+from logger import debug, info, warn, error, fatal
 
 def main():
   print(f"Starting packet capture for {TARGET_IP}...")
@@ -12,11 +13,11 @@ def main():
 def packet_handler(dum_packet):
   try:
     packet = Packet(dum_packet)
-    print(packet.print())
+    info(packet.print())
   except Exception as e:
-    print("There was an error!")
-    print("Erorr: " + str(e))
-    print("Offending packet: " + dum_packet.summary() + dum_packet[IP][TCP].load.hex())
+    error("There was an error!")
+    error("Erorr: " + str(e))
+    error("Offending packet: " + dum_packet.summary() + dum_packet[IP][TCP].load.hex())
 
 
 main()
