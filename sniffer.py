@@ -3,7 +3,7 @@ from scapy.all import IP,TCP,IPSession
 from scapy.all import Packet as SCPacket
 from scapy.all import PacketList
 from hashlib import sha256
-from Packet import Packet
+from packet_class import Packet
 from config import TARGET_IP,PACKET_COUNT
 from logger import debug, info, warn, error, fatal
 

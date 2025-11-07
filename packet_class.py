@@ -5,6 +5,7 @@ from scapy.all import Packet as ScapyPacket
 from hashlib import sha256
 from config import TARGET_IP
 from logger import debug,info,warning,error,fatal,warn
+from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
   # if it doesnt exist then generate the array
@@ -20,7 +21,7 @@ ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
 class Packet:
   
   def __init__(self, scapyPacket:ScapyPacket):
-    # initializers
+    # initializers"""  """
     self.packet:ScapyPacket
     self.tcp:ScapyPacket
     self.src_ip:str
@@ -28,7 +29,7 @@ class Packet:
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
     self.data_length:int = -1; self.data_bytes:bytes;
     self.op_code:int
-    self.packet_addendum:str
+    self.packet_addendum:str; self.packet_type:str;
     self.decrypted_data:bytes
     
     self.packet = scapyPacket
@@ -78,7 +79,7 @@ class Packet:
       #   if (self.data_length != len(self.data_bytes)):
       #     warn("Malformed packet! Lengths in hex and ascii do not match!")
       # else:
-      warn("Malformed packet! Lengths in hex do not match!")
+      warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
     # # if (self.data_length != len(self.data_bytes)):
     #   warn("Attempting to auto assign to len(data_length).")
     #   old_length:int = self.data_length
@@ -86,9 +87,10 @@ class Packet:
     #   warn(f"Problematic packet payload: {self.tcp.payload.load.hex()}")
     #   warn(f"Changed datalength from {old_length} to {self.data_length}")
     self.op_code = parse_bytes_to_num(self.data_bytes[0:2])
-    self.packet_addendum = f"[RAW] {self.data_bytes.hex()}"
+    self.packet_addendum = f"{self.data_bytes.hex()}"
+    self.packet_type = "RAW"
     if (self.op_code == 107):
-      num_bytes = (self.data_bytes[2] * 256) + self.data_bytes[3]
+      num_bytes = parse_bytes_to_num(self.data_bytes[2:4])
     #   print(num_bytes)
       code:int = 0
       OFFSET:int = 4; #const
@@ -110,16 +112,21 @@ class Packet:
         # incorrect lengths are usually because of fragmented packets
         # im gonna be lazy and just ignore them
         self.decrypt(Packet.encryption_key)
+        is_decrypted:bool = (self.decrypted_data != "")
+        if (is_decrypted == True):
+          self.op_code = parse_bytes_to_num(self.decrypted_data[0:2])
+          handle_known_packet(self)
   def decrypt(self, encryption_key) -> None:
     if (encryption_key == ""): return
     final_data:bytes = decrypt(self.data_bytes, encryption_key)
     self.decrypted_data : bytes = bytes(final_data)
-    self.packet_addendum = f"[DEC]: {self.decrypted_data.hex()}"
+    self.packet_addendum = f"{self.decrypted_data.hex()}"
+    self.packet_type = "DEC"
   def print(self) -> str:
     # ok so what i want is
     # if there 
     # nvm
-    return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.data_length}B] {self.packet_addendum}"
+    return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
 
 def decrypt(data_bytes:bytes, encryption_key:str) -> bytes:
   debug("Decrypyting!")
