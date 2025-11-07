@@ -5,7 +5,7 @@ from scapy.all import Packet as ScapyPacket
 from hashlib import sha256
 from config import TARGET_IP
 from logger import debug,info,warning,error,fatal,warn
-from known_packet_handler import handle_known_packet
+# from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
   # if it doesnt exist then generate the array
@@ -29,7 +29,7 @@ class Packet:
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
     self.data_length:int = -1; self.data_bytes:bytes;
     self.op_code:int
-    self.packet_addendum:str; self.packet_type:str;
+    self.packet_addendum:str; self.packet_type:str = "";
     self.decrypted_data:bytes
     
     self.packet = scapyPacket
@@ -63,6 +63,8 @@ class Packet:
   def parse_data(self) -> None:
     if (self.PSH_FLAG == False):
       self.data_length = 0
+      self.packet_type = self.packet_addendum
+      self.packet_addendum = ""
       return #if no data no bother
     raw_data_bytes:bytes = self.tcp.payload.load
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
@@ -158,3 +160,21 @@ def parse_bytes_to_num(byte_array):
 Packet.encryption_raw = -1
 Packet.encryption_num = -1
 Packet.encryption_key = ""
+
+
+###################################
+#                                 #
+# THIS USED TO BE A SEPARATE FILE #
+# BUT PYTHON COMPLAINED           #
+#                                 #
+###################################
+def handle_known_packet(packet) -> bool:
+  match packet.op_code:
+    case 0x000e:
+      handle_as_ping(packet)
+      return True
+    case _:
+      return False
+
+def handle_as_ping(packet):
+  packet.packet_addendum = "Ping!"
