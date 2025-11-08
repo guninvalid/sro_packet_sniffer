@@ -38,5 +38,5 @@ def simple_search():
               parentheses_index = current_func.index("(")
               current_func_name = current_func[5:parentheses_index]
               opcode = number_grabber.search(line).group(1)
-              print(f"{file},{current_func_name},{opcode}")
+              print(f"{opcode},{file},{current_func_name}")
 simple_search()
