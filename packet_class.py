@@ -168,13 +168,17 @@ Packet.encryption_key = ""
 # BUT PYTHON COMPLAINED           #
 #                                 #
 ###################################
-def handle_known_packet(packet) -> bool:
+def handle_known_packet(packet:Packet) -> bool:
   match packet.op_code:
-    case 0x000e:
+    case 14:
       handle_as_ping(packet)
       return True
+    case 31:
+      #Skills/skill.gd: send_skill_packet
+    case 63:
+      #Bugs/bug.gd: _on_hurtbox_hurt
     case _:
       return False
 
-def handle_as_ping(packet):
+def handle_as_ping(packet:Packet):
   packet.packet_addendum = "Ping!"
