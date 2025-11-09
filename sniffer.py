@@ -1,16 +1,18 @@
 from scapy.all import sniff
-from scapy.all import IP,TCP,IPSession
+from scapy.all import IP,TCP,IPSession,PacketList # type: ignore
 from scapy.all import Packet as SCPacket
-from scapy.all import PacketList
 from hashlib import sha256
 from packet_class import Packet
+from packet_class import CSV_HEADER
 from config import TARGET_IP,PACKET_COUNT
 from logger import debug, info, warn, error, fatal
+from logger import print_csv
 from known_packet_handler import populate_handlers
 
 def main():
   populate_handlers()
-  print(f"Starting packet capture for {TARGET_IP}...")
+  print_csv(CSV_HEADER)
+  info(f"Starting packet capture for {TARGET_IP}...")
   # ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
   packets:PacketList = sniff(session=IPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
 

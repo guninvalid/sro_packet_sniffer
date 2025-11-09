@@ -1,10 +1,11 @@
+from typing import Any
 from scapy.all import sniff
-from scapy.all import IP,TCP
+from scapy.all import IP,TCP #type:ignore
 from scapy.all import Packet as ScapyPacket
 # from GameSession import GameSession
 from hashlib import sha256
-from config import TARGET_IP
-from logger import debug,info,warning,error,fatal,warn
+from config import TARGET_IP,PRINT_CSV
+from logger import debug,info,warning,error,fatal,warn,print_csv
 # from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
@@ -19,6 +20,11 @@ def gen_lookup_array(N):
 ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
 
 class Packet:
+  def __getattr__(self, name: str) -> Any:
+    # PLEASE WORK
+    #partially helped by deepseek
+    #then fixed by stackoverflow
+    return None
   
   def __init__(self, scapyPacket:ScapyPacket):
     # initializers"""  """
@@ -95,10 +101,11 @@ class Packet:
     #   self.data_length = len(self.data_bytes)
     #   warn(f"Problematic packet payload: {self.tcp.payload.load.hex()}")
     #   warn(f"Changed datalength from {old_length} to {self.data_length}")
-    self.op_code = parse_bytes_to_num(self.data_bytes[0:2])
+    self.op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
     self.packet_addendum = f"{self.data_bytes.hex()}"
     self.packet_type = "RAW"
     if (self.op_code == 107):
+      self.clear_text = True
       num_bytes = parse_bytes_to_num(self.data_bytes[2:4])
     #   print(num_bytes)
       code:int = 0
@@ -116,13 +123,14 @@ class Packet:
       self.packet_addendum += encryption_key_message
       # warn(encryption_key_message)
     else:
+      
       # attempt to decrypt
       if (self.data_length == len(self.data_bytes)):
         # incorrect lengths are usually because of fragmented packets
         # im gonna be lazy and just ignore them
         is_decrypted:bool = self.decrypt(Packet.encryption_key)
         if (is_decrypted == True):
-          self.op_code = parse_bytes_to_num(self.decrypted_data[0:2])
+          self.op_code = self.negate_incoming_packets(parse_bytes_to_num(self.decrypted_data[0:2]))
           self.decrypted_data = self.decrypted_data[2:]
           handle_known_packet(self)
           self.packet_type = f"OP{self.op_code}"
@@ -139,7 +147,40 @@ class Packet:
     # ok so what i want is
     # if there 
     # nvm
+    print_csv(csv_line(self))
     return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
+  def negate_incoming_packets(self, op_code:int) -> int:
+    #uses negative op codes for packets from server
+    if (self.is_incoming):
+      return -1 * op_code
+    else:
+      return op_code
+
+CSV_HEADER = "src_ip,dst_ip,data_length,op_code,tcp.flags,data_bytes,decrypted_data"
+def csv_line(packet:Packet) -> str:
+  csv_line:str = csv_elem(packet.src_ip)
+  csv_line += csv_elem(packet.dst_ip)
+  csv_line += csv_elem(packet.data_length)
+  csv_line += csv_elem(packet.op_code)
+  csv_line += csv_elem(packet.tcp.flags)
+  csv_line += csv_elem(packet.data_bytes)
+  csv_line += csv_elem(packet.decrypted_data, last_elem=True)
+  return csv_line
+
+def none_to_blank(object) -> str:
+  if (object is None):
+    return ""
+  else:
+    return str(object)
+
+def csv_elem(object, last_elem=False) -> str:
+  if (object != "" and isinstance(object, bytes)):
+    object = object.hex()
+  elem:str = none_to_blank(object)
+  if (last_elem == True):
+    return elem
+  else:
+    return elem + ","
 
 def handle_known_packet(packet:Packet) -> bool:
   if (packet.op_code in handlers.keys()):
