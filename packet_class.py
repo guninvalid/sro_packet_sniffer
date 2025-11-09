@@ -120,23 +120,32 @@ class Packet:
       if (self.data_length == len(self.data_bytes)):
         # incorrect lengths are usually because of fragmented packets
         # im gonna be lazy and just ignore them
-        self.decrypt(Packet.encryption_key)
-        is_decrypted:bool = (self.decrypted_data != "")
+        is_decrypted:bool = self.decrypt(Packet.encryption_key)
         if (is_decrypted == True):
           self.op_code = parse_bytes_to_num(self.decrypted_data[0:2])
-          # handle_known_packet(self)
+          handle_known_packet(self)
           self.packet_type = f"OP{self.op_code}"
-  def decrypt(self, encryption_key) -> None:
-    if (encryption_key == ""): return
+    if (self.packet_type == "RAW" and len(self.packet_addendum) > 20):
+      self.packet_addendum = "f{self.packet_addendum[0:20]}..."
+  def decrypt(self, encryption_key) -> bool:
+    if (encryption_key == ""): return False
     final_data:bytes = decrypt(self.data_bytes, encryption_key)
     self.decrypted_data : bytes = bytes(final_data)
     self.packet_addendum = f"{self.decrypted_data.hex()}"
     self.packet_type = "DEC"
+    return True
   def print(self) -> str:
     # ok so what i want is
     # if there 
     # nvm
     return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
+
+def handle_known_packet(packet:Packet) -> bool:
+  if (packet.op_code in handlers.keys()):
+    handler = handlers[packet.op_code]
+    return handler.handle(packet)
+  else:
+    return False
 
 def decrypt(data_bytes:bytes, encryption_key:str) -> bytes:
   debug("Decrypyting!")
@@ -165,13 +174,12 @@ def parse_bytes_to_num(byte_array):
 #   # return (key_raw, key_sha)
 #   return key_raw
 
+class packet_handler_class:
+  def handle(self, packet:Packet) -> bool:
+    return False
+
 Packet.encryption_raw = -1
 Packet.encryption_num = -1
 Packet.encryption_key = ""
-
-def handle_as_ping(packet:Packet) -> bool:
-  packet.packet_addendum = "Ping!"
-  return True
-
-def handle_as_enemy_hurt(packet:Packet) -> bool:
-  pass
+handlers:dict[int,packet_handler_class] = {}
+# automatically populated by the sniffer class

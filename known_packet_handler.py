@@ -1,12 +1,19 @@
-# # from packet_class import Packet
+from packet_class import Packet,packet_handler_class
+from packet_class import handlers,parse_bytes_to_num
 
-# def handle_known_packet(packet) -> bool:
-#   match packet.op_code:
-#     case 0x000e:
-#       handle_as_ping(packet)
-#       return True
-#     case _:
-#       return False
 
-# def handle_as_ping(packet):
-#   packet.packet_addendum = "Ping!"
+class PingHandler(packet_handler_class):
+  def handle(self, packet:Packet): # pyright: ignore[reportIncompatibleMethodOverride]
+    packet.packet_addendum = "Ping!"
+    return True
+
+class EnemyHurtboxHandler(packet_handler_class):
+  def handle(self, packet:Packet):
+    data = packet.data_bytes
+    self.packet_addendum = "Hit: " + self.packet_addendum
+    return True
+    
+
+def populate_handlers():
+  handlers[14] = PingHandler();
+  handlers[30] = EnemyHurtboxHandler()
