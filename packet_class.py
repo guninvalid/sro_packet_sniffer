@@ -123,10 +123,11 @@ class Packet:
         is_decrypted:bool = self.decrypt(Packet.encryption_key)
         if (is_decrypted == True):
           self.op_code = parse_bytes_to_num(self.decrypted_data[0:2])
+          self.decrypted_data = self.decrypted_data[2:]
           handle_known_packet(self)
           self.packet_type = f"OP{self.op_code}"
-    if (self.packet_type == "RAW" and len(self.packet_addendum) > 20):
-      self.packet_addendum = "f{self.packet_addendum[0:20]}..."
+    if (self.packet_type == "RAW" and self.data_length > 20):
+      self.packet_addendum = f"{self.packet_addendum[0:20]}..."
   def decrypt(self, encryption_key) -> bool:
     if (encryption_key == ""): return False
     final_data:bytes = decrypt(self.data_bytes, encryption_key)
