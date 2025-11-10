@@ -4,8 +4,9 @@ from scapy.all import IP,TCP #type:ignore
 from scapy.all import Packet as ScapyPacket
 # from GameSession import GameSession
 from hashlib import sha256
-from config import TARGET_IP,PRINT_CSV
+from config import TARGET_IP,PRINT_CSV,CSV_DELIMETER
 from logger import debug,info,warning,error,fatal,warn,print_csv
+from packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
 # from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
@@ -35,7 +36,7 @@ class Packet:
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
     self.data_length:int = -1; self.data_bytes:bytes;
     self.op_code:int
-    self.packet_addendum:str; self.packet_type:str = "";
+    self.packet_addendum:str; self.packet_type:str = ""; self.csv_trailer:str;
     self.decrypted_data:bytes
     self.is_incoming:bool; self.is_outgoing:bool; self.dir_flag:str;
     
@@ -101,10 +102,10 @@ class Packet:
     #   self.data_length = len(self.data_bytes)
     #   warn(f"Problematic packet payload: {self.tcp.payload.load.hex()}")
     #   warn(f"Changed datalength from {old_length} to {self.data_length}")
-    self.op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
+    outer_op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
     self.packet_addendum = f"{self.data_bytes.hex()}"
     self.packet_type = "RAW"
-    if (self.op_code == 107):
+    if (outer_op_code == 107):
       self.clear_text = True
       num_bytes = parse_bytes_to_num(self.data_bytes[2:4])
     #   print(num_bytes)
@@ -132,8 +133,13 @@ class Packet:
         if (is_decrypted == True):
           self.op_code = self.negate_incoming_packets(parse_bytes_to_num(self.decrypted_data[0:2]))
           self.decrypted_data = self.decrypted_data[2:]
+          self.csv_trailer = self.retrieve_packet_desc()
           handle_known_packet(self)
-          self.packet_type = f"OP{self.op_code}"
+          self.packet_type = f"OP{abs(self.op_code)}"
+        else:
+          # void the op_code if nonexistent
+          # self.op_code = 0
+          pass
     if (self.packet_type == "RAW" and self.data_length > 20):
       self.packet_addendum = f"{self.packet_addendum[0:20]}..."
   def decrypt(self, encryption_key) -> bool:
@@ -143,6 +149,19 @@ class Packet:
     self.packet_addendum = f"{self.decrypted_data.hex()}"
     self.packet_type = "DEC"
     return True
+  def retrieve_packet_desc(self) -> str:
+    if (self.op_code < 0):
+      #search for associated server packet
+      server_op_code:int = abs(self.op_code)
+      if (server_op_code in SERVER_PACKET_LIST):
+        return str(SERVER_PACKET_LIST[server_op_code].get("desc"))
+    else:
+      #search for associated client packet
+      client_op_code:int = self.op_code
+      if (client_op_code in CLIENT_PACKET_LIST):
+        return str(CLIENT_PACKET_LIST[client_op_code].get("desc"))
+    return ""
+      
   def print(self) -> str:
     # ok so what i want is
     # if there 
@@ -155,17 +174,6 @@ class Packet:
       return -1 * op_code
     else:
       return op_code
-
-CSV_HEADER = "src_ip,dst_ip,data_length,op_code,tcp.flags,data_bytes,decrypted_data"
-def csv_line(packet:Packet) -> str:
-  csv_line:str = csv_elem(packet.src_ip)
-  csv_line += csv_elem(packet.dst_ip)
-  csv_line += csv_elem(packet.data_length)
-  csv_line += csv_elem(packet.op_code)
-  csv_line += csv_elem(packet.tcp.flags)
-  csv_line += csv_elem(packet.data_bytes)
-  csv_line += csv_elem(packet.decrypted_data, last_elem=True)
-  return csv_line
 
 def none_to_blank(object) -> str:
   if (object is None):
@@ -180,7 +188,22 @@ def csv_elem(object, last_elem=False) -> str:
   if (last_elem == True):
     return elem
   else:
-    return elem + ","
+    return elem + CSV_DELIMETER
+
+def csv_normalize(line:str) -> str:
+  return line.replace('\t', CSV_DELIMETER)
+
+CSV_HEADER = csv_normalize("src_ip\tdst_ip\tdata_length\top_code\ttcp.flags\tdata_bytes\tdecrypted_data\tcsv_trailer")
+def csv_line(packet:Packet) -> str:
+  csv_line:str = csv_elem(packet.src_ip)
+  csv_line += csv_elem(packet.dst_ip)
+  csv_line += csv_elem(packet.data_length)
+  csv_line += csv_elem(packet.op_code)
+  csv_line += csv_elem(packet.tcp.flags)
+  csv_line += csv_elem(packet.data_bytes)
+  csv_line += csv_elem(packet.decrypted_data)
+  csv_line += csv_elem(packet.csv_trailer, last_elem=True)
+  return csv_line
 
 def handle_known_packet(packet:Packet) -> bool:
   if (packet.op_code in handlers.keys()):
