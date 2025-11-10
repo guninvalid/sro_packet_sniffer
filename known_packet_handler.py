@@ -22,7 +22,7 @@ class datastream:
   def read_float(self) -> float:
     return convert_to_float('f', self.read_bytes(4))[0]
   def read_bytes(self, buffer_size:int) -> bytes:
-    if (buffer_size < len(self.stream)):
+    if (buffer_size > len(self.stream)):
       # even if empty just return None
       # return None
       # makes my life easier to throw an exception
@@ -81,7 +81,7 @@ class EnemySpawnHandler(packet_handler_class):
     # var max_hp = packet.read_long()
     max_hp:int = data.read_long()
     # var is_boss = packet.read_byte() == 1
-    is_boss:bool = data.read_bool()``
+    is_boss:bool = data.read_bool()
     # var is_shiny_enemy = packet.read_byte()
     is_shiny_enemy:bool = data.read_bool()
     # var level = packet.read_short()
@@ -98,3 +98,4 @@ def populate_handlers():
   # handlers[30] = EnemyHurtboxHandler()
   handlers[-16] = EnemyHurtboxHandler()
   handlers[-48] = EnemyHPHandler()
+  handlers[-14] = EnemySpawnHandler()
