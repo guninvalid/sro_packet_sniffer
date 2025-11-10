@@ -9,7 +9,7 @@ def print_to_stderr(message):
 
 def debug(message):
   if (LOGLEVEL <= DEBUG):
-    print(message)
+    print("DEBUG: " + message)
 
 def info(message):
   if (LOGLEVEL <= INFO):
