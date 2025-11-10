@@ -6,15 +6,17 @@ from packet_class import Packet
 from packet_class import CSV_HEADER
 from config import TARGET_IP,PACKET_COUNT
 from logger import debug, info, warn, error, fatal
-from logger import print_csv
+from logger import print_csv,clear_csv
 from known_packet_handler import populate_handlers
 
 def main():
   populate_handlers()
+  clear_csv()
   print_csv(CSV_HEADER)
   info(f"Starting packet capture for {TARGET_IP}...")
   # ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
   packets:PacketList = sniff(session=IPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
+  info("Packet capture completed!")
 
 def packet_handler(dum_packet:SCPacket):
   try:

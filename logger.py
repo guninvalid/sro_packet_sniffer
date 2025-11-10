@@ -1,5 +1,6 @@
 from config import LOGLEVEL, DEBUG, INFO, WARNING, ERROR, FATAL, PRINT_CSV
 from sys import stderr
+import os
 
 # theres definitely a good library for this but im lazy
 
@@ -26,9 +27,16 @@ def fatal(message):
   if (LOGLEVEL <= FATAL):
     print_to_stderr(message)
 
-def print_csv(message):
-  if (PRINT_CSV == True):
-    print(message)
+def print_csv(message,end="\n"):
+  if (not PRINT_CSV in [None, False]):
+    with open(PRINT_CSV, 'a') as file_handle:
+      file_handle.write(message + end)
+
+def clear_csv():
+  if (not PRINT_CSV in [None, False]):
+    if (isinstance(PRINT_CSV, str)):
+      with open(PRINT_CSV, 'w') as file_handle:
+        file_handle.write("")
 
 # aliases
 d = debug; i = info; w = warning; e = error; f = fatal;
