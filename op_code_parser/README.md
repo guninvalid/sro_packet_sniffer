@@ -1,0 +1,1 @@
+This is just a small script I used to grab the client op codes and their parent functions. Point the `DIR` variable to the directory where you have the game decompiled.
