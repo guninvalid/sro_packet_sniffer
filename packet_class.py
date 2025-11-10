@@ -75,7 +75,7 @@ class Packet:
     flag_depreciator = flag_depreciator >> 1;
     self.packet_addendum = self.tcp.flags
   def parse_data(self) -> None:
-    if (self.PSH_FLAG == False):
+    if (self.tcp.payload == None or len(self.tcp.payload) == 0):
       self.data_length = 0
       self.packet_type = self.packet_addendum
       self.packet_addendum = ""
@@ -84,24 +84,16 @@ class Packet:
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
     self.data_bytes = raw_data_bytes[2:]
     if (self.data_length != len(self.data_bytes)):
-      # # allegedly in some cases the length will be in ascii not hex
-      # if (30 <= raw_data_bytes[0] and raw_data_bytes[0] <= 39
-      #     and 30 <= raw_data_bytes[1] and raw_data_bytes[1] <= 39):
-      #   # attempt to process as ascii length
-      #   ascii_int:int = raw_data_bytes[1] - 30
-      #   ascii_int += 10 * (raw_data_bytes[0] - 30)
-      #   self.data_length = ascii_int
-      #   # test again
-      #   if (self.data_length != len(self.data_bytes)):
-      #     warn("Malformed packet! Lengths in hex and ascii do not match!")
-      # else:
-      warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
-    # # if (self.data_length != len(self.data_bytes)):
-    #   warn("Attempting to auto assign to len(data_length).")
-    #   old_length:int = self.data_length
-    #   self.data_length = len(self.data_bytes)
-    #   warn(f"Problematic packet payload: {self.tcp.payload.load.hex()}")
-    #   warn(f"Changed datalength from {old_length} to {self.data_length}")
+      if (self.data_length == 0 and self.ACK_FLAG == True and self.PSH_FLAG == False and len(self.data_bytes) == 4 and parse_bytes_to_num(self.data_bytes) == 0):
+        # this is a surprisingly common case so we're cutting it out
+        pass
+      elif (self.data_length > 1400 and len(self.data_bytes) > self.data_length):
+        # probably a fragmented packet but ip session refrags so we ignore
+        self.data_length = len(self.data_bytes)
+        pass
+      else:
+        warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
+        warn(f"Expected length of {self.data_length} bytes, found {len(self.data_bytes)}")
     outer_op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
     self.packet_addendum = f"{self.data_bytes.hex()}"
     self.packet_type = "RAW"

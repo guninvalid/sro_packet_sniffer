@@ -36,7 +36,7 @@ def clear_csv():
   if (not PRINT_CSV in [None, False]):
     if (isinstance(PRINT_CSV, str)):
       with open(PRINT_CSV, 'w') as file_handle:
-        file_handle.write("")
+        file_handle.write("") #write an empty to empty the file
 
 # aliases
 d = debug; i = info; w = warning; e = error; f = fatal;

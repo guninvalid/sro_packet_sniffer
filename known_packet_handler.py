@@ -3,6 +3,11 @@ from packet_class import handlers,parse_bytes_to_num
 from logger import debug,info,warn,error,fatal
 from struct import unpack as convert_to_float
 
+# it took me a lot of work to make this not import the packet class
+# so no circular import fortunately
+# but now it uses event based programming to do that
+# more complicated but at least its easier to debug
+
 # pyright: ignore[reportIncompatibleMethodOverride]
 
 class datastream:
