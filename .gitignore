@@ -1,0 +1,6 @@
+sniffer.lnk
+__pycache__
+*.log
+.vscode
+*.csv
+*.tsv
