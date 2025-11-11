@@ -1,4 +1,4 @@
-from scapy.all import sniff
+from scapy.all import sniff,wrpcap
 from scapy.all import IP,TCP,IPSession,TCPSession,PacketList # type: ignore
 from scapy.all import Packet as SCPacket
 from hashlib import sha256
@@ -14,8 +14,9 @@ def main():
   clear_csv()
   print_csv(CSV_HEADER)
   info(f"Starting packet capture for {TARGET_IP}...")
-  # ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
-  packets:PacketList = sniff(session=TCPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
+  packets = sniff(session=TCPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
+  # debug(str(packets.hexdump()))
+  # wrpcap(filename="this is my cool file!!",pkt=packets)
   info("Packet capture completed!")
 
 def packet_handler(dum_packet:SCPacket):
