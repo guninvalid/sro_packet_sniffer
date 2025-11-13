@@ -1,6 +1,6 @@
 from packet_class import Packet,packet_handler_class
 from packet_class import handlers,parse_bytes_to_num
-from logger import debug,info,warn,error,fatal
+from libraries.logger import debug,info,warn,error,fatal
 from struct import unpack as convert_to_float
 
 # it took me a lot of work to make this not import the packet class

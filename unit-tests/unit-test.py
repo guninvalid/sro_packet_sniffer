@@ -1,5 +1,5 @@
 from scapy.all import sniff
-from logger import info
+from libraries.logger import info
 from packet_class import Packet
 
 info("Attempting packet processing...")
