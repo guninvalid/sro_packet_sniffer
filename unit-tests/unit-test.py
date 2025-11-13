@@ -1,10 +1,16 @@
-from scapy.all import Packet
+from scapy.all import sniff
 from logger import info
+from packet_class import Packet
 
 info("Attempting packet processing...")
 packet = sniff(offline="sample_packets/capture.pcap", count=1)
 assert (packet != None)
 info("Assertion passed!")
+
+info("Creating Packet object...")
+packet = Pacet(packet)
+assert packet != None
+info ("Assesstion passed!")
 
 info("Testing flags...")
 assert (packet.SYN_FLAG == True)
