@@ -1,6 +1,6 @@
 from scapy.all import sniff
-from libraries.logger import info
-from packet_class import Packet
+# from libraries.logger import info
+from sniffing.packet_class import Packet
 
 info("Attempting packet processing...")
 packet = sniff(offline="sample_packets/capture.pcap", count=1)
