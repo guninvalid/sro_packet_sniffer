@@ -6,7 +6,7 @@ from scapy.all import Packet as ScapyPacket
 from hashlib import sha256
 from sniffing.config import TARGET_IP,PRINT_CSV,CSV_DELIMETER
 from libraries.logger import debug,info,warning,error,fatal,warn,print_csv,clear_csv
-from libraries.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
+from sniffing.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
 # from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
@@ -210,12 +210,13 @@ def decrypt(data_bytes:bytes, encryption_key:str) -> bytes:
   final_data:list[bytes] = [b'0'] * data_length
   key_length:int = len(encryption_key)
   for i in range(0, data_length):
-    byte = data_bytes[i];
+    data_byte = data_bytes[i];
     offset = encryption_key[(i % key_length)].encode('utf-8')[0]
-    final_byte = byte - offset
+    final_byte = data_byte - offset
     while final_byte < 0:
       final_byte += 256
-    final_data[i] = int.to_bytes(final_byte)
+    # final_data[i] = int.to_bytes(final_byte)
+    final_data[i] = bytes(final_byte)
   return b''.join(final_data)
 
 def parse_bytes_to_num(byte_array):

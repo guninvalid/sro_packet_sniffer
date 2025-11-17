@@ -1,4 +1,4 @@
-from libraries.config import LOGLEVEL, DEBUG, INFO, WARNING, ERROR, FATAL, PRINT_CSV
+from sniffing.config import LOGLEVEL, DEBUG, INFO, WARNING, ERROR, FATAL, PRINT_CSV
 from sys import stderr
 import os
 

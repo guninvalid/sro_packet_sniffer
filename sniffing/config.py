@@ -5,7 +5,7 @@ DEBUG = 0; INFO = 1; WARNING = 2; ERROR = 3; FATAL = 4; NONE = 5; STDERR_ONLY = 
 
 TARGET_IP = "167.99.6.174"
 LOGLEVEL = DEBUG
-PACKET_COUNT = 99999
+PACKET_COUNT = 10
 
 # set PRINT_CSV to filename to print to
 # or set to log level enum to print with loglevel

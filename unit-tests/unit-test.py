@@ -1,5 +1,5 @@
 from scapy.all import sniff
-# from libraries.logger import info
+from libraries.logger import info
 from sniffing.packet_class import Packet
 
 info("Attempting packet processing...")
@@ -8,7 +8,7 @@ assert (packet != None)
 info("Assertion passed!")
 
 info("Creating Packet object...")
-packet = Pacet(packet)
+packet = Packet(packet)
 assert packet != None
 info ("Assesstion passed!")
 
