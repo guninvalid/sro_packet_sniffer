@@ -26,7 +26,7 @@ class Packet:
     #partially helped by deepseek
     #then fixed by stackoverflow
     return None
-  
+
   def __init__(self, scapyPacket:ScapyPacket):
     # initializers"""  """
     self.packet:ScapyPacket
@@ -166,6 +166,10 @@ class Packet:
       return -1 * op_code
     else:
       return op_code
+  
+  def __init__(self):
+    #this is purely used for testing purposes
+    pass
 
 def none_to_blank(object) -> str:
   if (object is None):
@@ -215,7 +219,8 @@ def decrypt(data_bytes:bytes, encryption_key:str) -> bytes:
     final_byte = byte - offset
     while final_byte < 0:
       final_byte += 256
-    final_data[i] = int.to_bytes(final_byte)
+    # to_bytes = final_byte.to_bytes(1)
+    final_data[i] = final_byte.to_bytes(1, byteorder='big')
   return b''.join(final_data)
 
 def parse_bytes_to_num(byte_array):
