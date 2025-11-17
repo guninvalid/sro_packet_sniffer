@@ -6,7 +6,7 @@ from scapy.all import Packet as ScapyPacket
 from hashlib import sha256
 from sniffing.config import TARGET_IP,PRINT_CSV,CSV_DELIMETER
 from libraries.logger import debug,info,warning,error,fatal,warn,print_csv,clear_csv
-from sniffing.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
+from libraries.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
 # from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
