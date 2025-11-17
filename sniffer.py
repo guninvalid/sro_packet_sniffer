@@ -18,10 +18,12 @@ def main():
   # debug(str(packets.hexdump()))
   # wrpcap(filename="this is my cool file!!",pkt=packets)
   info("Packet capture completed!")
+  return packets
 
 def packet_handler(dum_packet:SCPacket):
   try:
     packet:Packet = Packet(dum_packet)
+    return packet
     info(packet.print())
   except Exception as e:
     error("There was an error!")
