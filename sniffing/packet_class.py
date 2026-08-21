@@ -155,8 +155,6 @@ class Packet:
     return ""
       
   def print(self) -> str:
-    # ok so what i want is
-    # if there 
     # nvm
     print_csv(csv_line(self))
     return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
