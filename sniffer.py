@@ -14,7 +14,7 @@ def main():
   clear_csv()
   print_csv(CSV_HEADER)
   info(f"Starting packet capture for {TARGET_IP}...")
-  packets = sniff(offline="sample_packets/capture.pcap",session=TCPSession, filter=f"host {TARGET_IP}", prn=packet_handler, count=PACKET_COUNT)
+  packets = sniff(offline="sample_packets/capture.pcap",session=TCPSession, filter=f"tcp port {SRO_PORT}", prn=packet_handler, count=PACKET_COUNT)
   # debug(str(packets.hexdump()))
   # wrpcap(filename="this is my cool file!!",pkt=packets)
   info("Packet capture completed!")
