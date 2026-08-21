@@ -4,9 +4,10 @@ from scapy.all import IP,TCP #type:ignore
 from scapy.all import Packet as ScapyPacket
 # from GameSession import GameSession
 from hashlib import sha256
-from sniffing.config import TARGET_IP,PRINT_CSV,CSV_DELIMETER
+from sniffing.config import LOCAL_IP,PRINT_CSV,CSV_DELIMETER
 from libraries.logger import debug,info,warning,error,fatal,warn,print_csv,clear_csv
 from libraries.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
+import socket;
 # from known_packet_handler import handle_known_packet
 
 def gen_lookup_array(N):
@@ -19,15 +20,22 @@ def gen_lookup_array(N):
   return lookup
 
 ENCRYPTION_NUM_LOOKUP_ARRAY = gen_lookup_array(121243)
+server_ip = "";
+local_ip = LOCAL_IP;
+if local_ip == "":
+  local_ip = socket.gethostbyname(socket.gethostname());
 
 class Packet:
   def __getattr__(self, name: str) -> Any:
     # PLEASE WORK
     #partially helped by deepseek
     #then fixed by stackoverflow
-    return None
+    return None;
+    # yea uh. i have no idea why this is here. i just know it breaks the program if i don't put it in
 
   def __init__(self, scapyPacket:ScapyPacket):
+    global server_ip;
+    global local_ip;
     # initializers"""  """
     self.packet:ScapyPacket
     self.tcp:ScapyPacket
@@ -46,16 +54,31 @@ class Packet:
     self.tcp = self.packet[IP][TCP]
     self.src_ip = self.packet[IP].src
     self.dst_ip = self.packet[IP].dst
-    if self.src_ip == TARGET_IP or self.dst_ip == TARGET_IP:
+    self.src_port = self.packet[TCP].sport
+    self.dst_port = self.packet[TCP].dport
+    if server_ip == "":
+      # since i can't know the server IP ahead of time, i'll assume
+      # that my current machine is on a local IP address. the other one i will
+      # assume is the server.
+      # so basically i parse both the src IP and dst IP and find which is the local IP.
+      if self.src_ip == local_ip:
+        server_ip = self.dst_ip;
+      elif self.dst_ip == local_ip:
+        server_ip = self.src_ip;
+      else:
+        fatal("Unable to determine server IP because the local IP address is not involved in the communication! Please set the local IP "
+              + f"address to {self.src_ip} or {self.dst_ip} in config.py.");
+    if self.src_ip == server_ip or self.dst_ip == server_ip:
       self.set_flags()
       self.parse_data()
+      
   def set_flags(self) -> None:
-    if (self.dst_ip == TARGET_IP):
+    if (self.dst_ip == server_ip):
       self.is_outgoing = True
-      self.dir_flag = "OUT"
-    if (self.src_ip == TARGET_IP):
+      self.dir_flag = "O"
+    if (self.src_ip == server_ip):
       self.is_incoming = True
-      self.dir_flag = " IN"
+      self.dir_flag = "I"
     flag_depreciator = self.tcp.flags.value;
     self.FIN_FLAG = flag_depreciator % 2 == 1;
     flag_depreciator = flag_depreciator >> 1;
@@ -156,8 +179,8 @@ class Packet:
       
   def print(self) -> str:
     # nvm
-    print_csv(csv_line(self))
-    return f"Packet {self.src_ip} -> {self.dst_ip}: [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
+    # print_csv(csv_line(self))
+    return f"P: {self.src_ip}:{self.src_port}→{self.dst_ip}:{self.dst_port} [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
   def negate_incoming_packets(self, op_code:int) -> int:
     #uses negative op codes for packets from server
     if (self.is_incoming):

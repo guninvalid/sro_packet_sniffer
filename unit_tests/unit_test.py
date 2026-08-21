@@ -2,7 +2,7 @@ from scapy.all import sniff,TCPSession
 # from libraries.logger import info
 from sniffing.packet_class import Packet
 from sniffer import packet_handler
-from sniffing.config import TARGET_IP
+from sniffing.config import server_ip
 
 def test_exists():
     # just testing imports at the very least
@@ -12,7 +12,7 @@ def test_exists():
 
 def read_packets(count=9999):
     packets = sniff(offline="sample_packets/capture.pcap",
-                    session=TCPSession, filter=f"host {TARGET_IP}", 
+                    session=TCPSession, filter=f"host {server_ip}", 
                     count=count)
 
 def test_encryption_lookup_exists():
