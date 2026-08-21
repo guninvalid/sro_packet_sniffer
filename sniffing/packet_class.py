@@ -166,10 +166,6 @@ class Packet:
       return -1 * op_code
     else:
       return op_code
-  
-  def __init__(self):
-    #this is purely used for testing purposes
-    pass
 
 def none_to_blank(object) -> str:
   if (object is None):
