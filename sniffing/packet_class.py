@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 from scapy.all import sniff
 from scapy.all import IP,TCP #type:ignore
 from scapy.all import Packet as ScapyPacket
@@ -42,10 +42,7 @@ class Packet:
     global server_ip;
     global local_ip;
     # initializers"""  """
-    self.packet:ScapyPacket
-    self.tcp:ScapyPacket
-    self.src_ip:str
-    self.dst_ip:str
+    self.packet:List[ScapyPacket]; self.tcp:ScapyPacket; self.src_ip:str; self.dst_ip:str
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
     self.data_length:int = -1; self.data_bytes:bytes;
     self.op_code:int
@@ -53,14 +50,14 @@ class Packet:
     self.decrypted_data:bytes
     self.is_incoming:bool; self.is_outgoing:bool; self.dir_flag:str;
     
-    self.packet = scapyPacket
-    if (self.packet.haslayer(TCP) == False):
+    self.packet = [scapyPacket]
+    if (scapyPacket.haslayer(TCP) == False):
       return self
-    self.tcp = self.packet[IP][TCP]
-    self.src_ip = self.packet[IP].src
-    self.dst_ip = self.packet[IP].dst
-    self.src_port = self.packet[TCP].sport
-    self.dst_port = self.packet[TCP].dport
+    self.tcp = scapyPacket[IP][TCP]
+    self.src_ip = scapyPacket[IP].src
+    self.dst_ip = scapyPacket[IP].dst
+    self.src_port = scapyPacket[TCP].sport
+    self.dst_port = scapyPacket[TCP].dport
     if server_ip == "":
       # since i can't know the server IP ahead of time, i'll assume
       # that my current machine is on a local IP address. the other one i will
@@ -122,8 +119,9 @@ class Packet:
         self.data_length = len(self.data_bytes)
         pass
       else:
-        warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
-        warn(f"Expected length of {self.data_length} bytes, found {len(self.data_bytes)}")
+        # warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
+        # warn(f"Expected length of {self.data_length} bytes, found {len(self.data_bytes)}")
+        # ok. so i know this packet is fragmented. can i take out the second
     outer_op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
     self.packet_addendum = f"{self.data_bytes.hex()}"
     self.packet_type = "RAW"

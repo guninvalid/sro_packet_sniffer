@@ -6,7 +6,7 @@ DEBUG = 0; INFO = 1; WARNING = 2; ERROR = 3; FATAL = 4; NONE = 5; STDERR_ONLY = 
 SRO_PORT = 31261
 LOGLEVEL = INFO
 PACKET_COUNT = 100
-LOCAL_IP = "";
+LOCAL_IP = "10.42.0.182";
 # if the server IP is giving errors, set the local IP!
 
 # set PRINT_CSV to filename to print to

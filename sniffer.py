@@ -26,15 +26,5 @@ def debug_offline():
   info(f"Debug complete!");
   return packets;
 
-def packet_handler(dum_packet:SCPacket):
-  try:
-    packet:Packet = Packet(dum_packet)
-    info(packet.print())
-  except Exception as e:
-    error("There was an error!")
-    error("Error: " + str(e))
-    error("Offending packet: " + dum_packet.summary())
-    error("Load hex: " + dum_packet[IP][TCP].load.hex())
-
 if (__name__ == "__main__"):
-  main();
+  debug_offline();
