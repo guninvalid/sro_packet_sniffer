@@ -10,6 +10,11 @@ from libraries.packet_listing import SERVER_PACKET_LIST,CLIENT_PACKET_LIST
 import socket;
 # from known_packet_handler import handle_known_packet
 
+UP_ARROW = "↑";
+RIGHT_ARROW = "→";
+LEFT_ARROW = "←";
+DOWN_ARROW = "↓";
+
 def gen_lookup_array(N):
   # if it doesnt exist then generate the array
   lookup = [-1] * N
@@ -75,10 +80,10 @@ class Packet:
   def set_flags(self) -> None:
     if (self.dst_ip == server_ip):
       self.is_outgoing = True
-      self.dir_flag = "O"
+      self.dir_flag = UP_ARROW
     if (self.src_ip == server_ip):
       self.is_incoming = True
-      self.dir_flag = "I"
+      self.dir_flag = DOWN_ARROW
     flag_depreciator = self.tcp.flags.value;
     self.FIN_FLAG = flag_depreciator % 2 == 1;
     flag_depreciator = flag_depreciator >> 1;
@@ -100,17 +105,19 @@ class Packet:
   def parse_data(self) -> None:
     if (self.tcp.payload == None or len(self.tcp.payload) == 0):
       self.data_length = 0
-      self.packet_type = self.packet_addendum
+      self.packet_type = self.tcp.flags
       self.packet_addendum = ""
       return #if no data no bother
     raw_data_bytes:bytes = self.tcp.payload.load
     self.data_length = parse_bytes_to_num(raw_data_bytes[0:2]) # initial length
     self.data_bytes = raw_data_bytes[2:]
+    if (self.ACK_FLAG == True and self.PSH_FLAG == False and len(self.data_bytes) == 4 and parse_bytes_to_num(self.data_bytes) == 0):
+      self.data_length = 4
+      self.packet_type = self.tcp.flags
+      self.packet_addendum = ""
+      return;
     if (self.data_length != len(self.data_bytes)):
-      if (self.data_length == 0 and self.ACK_FLAG == True and self.PSH_FLAG == False and len(self.data_bytes) == 4 and parse_bytes_to_num(self.data_bytes) == 0):
-        # this is a surprisingly common case so we're cutting it out
-        pass
-      elif (self.data_length > 1400 and len(self.data_bytes) > self.data_length):
+      if (self.data_length > 1400 and len(self.data_bytes) > self.data_length):
         # probably a fragmented packet but ip session refrags so we ignore
         self.data_length = len(self.data_bytes)
         pass
@@ -180,7 +187,7 @@ class Packet:
   def print(self) -> str:
     # nvm
     # print_csv(csv_line(self))
-    return f"P: {self.src_ip}:{self.src_port}→{self.dst_ip}:{self.dst_port} [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
+    return f"P: {self.src_ip}:{self.src_port}{RIGHT_ARROW}{self.dst_ip}:{self.dst_port} [{self.dir_flag}{self.data_length}B] [{self.packet_type}]: {self.packet_addendum}"
   def negate_incoming_packets(self, op_code:int) -> int:
     #uses negative op codes for packets from server
     if (self.is_incoming):
