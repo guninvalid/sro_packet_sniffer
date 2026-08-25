@@ -7,6 +7,7 @@ from sniffing.packet_class import CSV_HEADER
 from sniffing.config import SRO_PORT,PACKET_COUNT
 from libraries.logger import debug, info, warn, error, fatal
 from libraries.logger import print_csv,clear_csv
+from sniffing.scapy_packet_handler import packet_handler
 # from sniffing.known_packet_handler import populate_handlers
 
 def main():

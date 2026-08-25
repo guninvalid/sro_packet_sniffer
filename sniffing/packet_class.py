@@ -42,13 +42,14 @@ class Packet:
     global server_ip;
     global local_ip;
     # initializers"""  """
-    self.packet:List[ScapyPacket]; self.tcp:ScapyPacket; self.src_ip:str; self.dst_ip:str
+    self.packet:List[ScapyPacket]; self.tcp:ScapyPacket; self.src_ip:str; self.dst_ip:str; self.flags:int
     self.FIN_FLAG:bool; self.SYN_FLAG:bool; self.RST_FLAG:bool; self.PSH_FLAG:bool; self.ACK_FLAG:bool; self.URG_FLAG:bool; self.ECE_FLAG:bool; self.CWR_FLAG:bool;
     self.data_length:int = -1; self.data_bytes:bytes;
     self.op_code:int
     self.packet_addendum:str; self.packet_type:str = ""; self.csv_trailer:str;
     self.decrypted_data:bytes
     self.is_incoming:bool; self.is_outgoing:bool; self.dir_flag:str;
+    self.is_partial_packet:bool = False;
     
     self.packet = [scapyPacket]
     if (scapyPacket.haslayer(TCP) == False):
@@ -58,6 +59,8 @@ class Packet:
     self.dst_ip = scapyPacket[IP].dst
     self.src_port = scapyPacket[TCP].sport
     self.dst_port = scapyPacket[TCP].dport
+    self.flags = scapyPacket[IP][TCP].flags;
+    self.data_bytes = scapyPacket[IP][TCP].payload;
     if server_ip == "":
       # since i can't know the server IP ahead of time, i'll assume
       # that my current machine is on a local IP address. the other one i will
@@ -116,11 +119,11 @@ class Packet:
     if (self.data_length != len(self.data_bytes)):
       if (self.data_length > 1400 and len(self.data_bytes) > self.data_length):
         # probably a fragmented packet but ip session refrags so we ignore
-        self.data_length = len(self.data_bytes)
+        self.is_partial_packet = True;
         pass
       else:
-        # warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
-        # warn(f"Expected length of {self.data_length} bytes, found {len(self.data_bytes)}")
+        warn("Malformed packet! Lengths in hex do not match! Skipping potential fragmented packet.")
+        warn(f"Expected length of {self.data_length} bytes, found {len(self.data_bytes)}")
         # ok. so i know this packet is fragmented. can i take out the second
     outer_op_code = self.negate_incoming_packets(parse_bytes_to_num(self.data_bytes[0:2]))
     self.packet_addendum = f"{self.data_bytes.hex()}"
